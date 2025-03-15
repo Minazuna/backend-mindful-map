@@ -30,11 +30,11 @@ exports.predictMood = async (req, res) => {
         console.log("Formatted logs for Python:", formattedLogs);
 
         return new Promise((resolve, reject) => {
-            const pythonProcess = spawn(
-                path.join(process.cwd(), '..', 'venv', 'Scripts', 'python'),
-                [path.join(__dirname, '..', 'mood_prediction.py')],
-                { stdio: ['pipe', 'pipe', 'pipe'] }
-            );
+            // const pythonProcess = spawn(
+            //     path.join(process.cwd(), '..', 'venv', 'Scripts', 'python'),
+            //     [path.join(__dirname, '..', 'mood_prediction.py')],
+            //     { stdio: ['pipe', 'pipe', 'pipe'] }
+            // );
 
             // const pythonExecutable = process.platform === 'win32' 
             //     ? path.join(process.cwd(), '..', 'venv', 'Scripts', 'python.exe') 
@@ -45,8 +45,8 @@ exports.predictMood = async (req, res) => {
             //     { stdio: ['pipe', 'pipe', 'pipe'] }
             // );
 
-            // const scriptPath = path.resolve(__dirname, '..', 'mood_prediction.py');
-            // const pythonProcess = spawn(pythonExecutable, [scriptPath], { stdio: ['pipe', 'pipe', 'pipe'] });
+            const scriptPath = path.resolve(__dirname, '..', 'mood_prediction.py');
+            const pythonProcess = spawn(pythonExecutable, [scriptPath], { stdio: ['pipe', 'pipe', 'pipe'] });
 
             let pythonData = '';
             let pythonError = '';
