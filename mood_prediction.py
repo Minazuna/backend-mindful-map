@@ -11,7 +11,7 @@ from flask import Flask
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://mindful-map-frontend-2h7figfff-minas-projects-d2a03ff7.vercel.app"}})
+CORS(app, resources={r"/*": {"origins": "https://mindful-map-frontend.vercel.app"}})
 
 @app.route('/')
 def home():
