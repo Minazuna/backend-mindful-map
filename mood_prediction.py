@@ -8,8 +8,10 @@ import json
 import sys
 import logging
 from flask import Flask
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "https://mindful-map-frontend-2h7figfff-minas-projects-d2a03ff7.vercel.app"}})
 
 @app.route('/')
 def home():
@@ -196,6 +198,7 @@ def predict_mood(mood_logs):
         return {'error': str(e)}
 
 if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000) 
     try:
         input_data = sys.stdin.read().strip()
         if not input_data:
