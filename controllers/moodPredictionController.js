@@ -35,19 +35,7 @@ exports.predictMood = async (req, res) => {
                 [path.join(__dirname, '..', 'mood_prediction.py')],
                 { stdio: ['pipe', 'pipe', 'pipe'] }
             );
-
-            // const pythonExecutable = process.platform === 'win32' 
-            //     ? path.join(process.cwd(), '..', 'venv', 'Scripts', 'python.exe') 
-            //     : path.join(process.cwd(), '..', 'venv', 'bin', 'python');
-
-            // const pythonProcess = spawn(pythonExecutable, 
-            //     [path.join(__dirname, '..', 'mood_prediction.py')],
-            //     { stdio: ['pipe', 'pipe', 'pipe'] }
-            // );
-
-            // const scriptPath = path.resolve(__dirname, '..', 'mood_prediction.py');
-            // const pythonProcess = spawn(pythonExecutable, [scriptPath], { stdio: ['pipe', 'pipe', 'pipe'] });
-
+            
             let pythonData = '';
             let pythonError = '';
 
