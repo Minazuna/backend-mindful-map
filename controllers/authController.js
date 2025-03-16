@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendVerificationEmail = (user, token) => {
-  const verificationUrl = `https://mindful-map-frontend.vercel.app/api/auth/verify-email?token=${token}`;
+  const verificationUrl = `${process.env.VITE_NODE_API}/api/auth/verify-email?token=${token}`;
 
   const mailOptions = {
     from: '"Mindful Map" <no-reply@mindfulmap.com>',
