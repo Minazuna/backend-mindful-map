@@ -20,50 +20,34 @@ exports.predictMood = async (req, res) => {
             });
         }
 
+        // Format the logs for the Flask API
         const formattedLogs = moodLogs.map(log => ({
             mood: log.mood.toLowerCase(),
             timestamp: log.date.toISOString(),
             activities: Array.isArray(log.activities) ? log.activities : []
         }));
 
-        console.log("Formatted logs for Python service:", formattedLogs);
+        console.log("Formatted logs for Python API:", formattedLogs);
 
-        // Get the Python service URL from environment variables
-        const PYTHON_SERVICE_URL = `${process.env.VITE_PYTHON_API}/api/predict-mood`;
-        console.log("Sending POST request to:", PYTHON_SERVICE_URL);
-
-        // Send the data directly to the Python service
-        const pythonResponse = await axios.post(PYTHON_SERVICE_URL, formattedLogs, {
+        // Call the Flask API
+        const pythonApiUrl = process.env.PYTHON_API_URL || 'https://mindful-map-backend-python.onrender.com';
+        const response = await axios.post(`${pythonApiUrl}/api/predict-mood`, formattedLogs, {
             headers: {
-                'Content-Type': 'application/json'
-            },
-            timeout: 60000 // 60 seconds timeout for ML processing
+                'Content-Type': 'application/json',
+                // Forward auth token if needed
+                ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
+            }
         });
-        
-        console.log("Python service response:", pythonResponse.data);
-        
-        if (!pythonResponse.data.success) {
-            return res.status(500).json({
-                success: false,
-                message: pythonResponse.data.message || 'Error from prediction service'
-            });
-        }
-        
-        return res.json({
+
+        // Return the predictions from the Flask API
+        res.json({
             success: true,
-            predictions: pythonResponse.data.predictions || {},
-            insights: pythonResponse.data.insights || {}
+            predictions: response.data.predictions,
+            insights: response.data.insights
         });
 
     } catch (error) {
         console.error('Controller Error:', error);
-        // Enhanced error logging
-        if (error.response) {
-            console.error('Response data:', error.response.data);
-            console.error('Response status:', error.response.status);
-        } else if (error.request) {
-            console.error('No response received:', error.request);
-        }
         res.status(500).json({
             success: false,
             message: 'Server error while generating predictions',
