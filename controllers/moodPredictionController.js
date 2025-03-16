@@ -31,7 +31,7 @@ exports.predictMood = async (req, res) => {
 
         // Call the Flask API
         const pythonApiUrl = process.env.PYTHON_API_URL || 'https://mindful-map-backend-python.onrender.com';
-        const response = await axios.post(`${pythonApiUrl}/api/predict-mood`, formattedLogs, {
+        const response = await axios.get(`${pythonApiUrl}/api/predict-mood`, formattedLogs, {
             headers: {
                 'Content-Type': 'application/json',
                 // Forward auth token if needed
