@@ -31,7 +31,7 @@ exports.predictMood = async (req, res) => {
         console.log("Formatted logs for Python service:", formattedLogs);
 
         // Send the data to the Python service
-        const pythonResponse = await axios.post(PYTHON_SERVICE_URL, formattedLogs, {
+        const pythonResponse = await axios.fetch(PYTHON_SERVICE_URL, formattedLogs, {
             headers: {
                 'Content-Type': 'application/json'
             },
