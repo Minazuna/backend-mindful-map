@@ -10,17 +10,44 @@ from flask_cors import CORS
 
 # Create Flask app
 app = Flask(__name__)
-# Enable CORS with proper configuration
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# Enable CORS properly
+CORS(app, origins="*", supports_credentials=True)
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @app.route('/api/predict-mood', methods=['GET', 'POST', 'OPTIONS'])
 def predict():
-    # Handle preflight OPTIONS request
-    if request.method == 'GET':
+    # Handle preflight OPTIONS request separately
+    if request.method == 'OPTIONS':
         response = app.make_default_options_response()
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            'Access-Control-Max-Age': '3600'
+        }
+        for key, value in headers.items():
+            response.headers.add(key, value)
         return response
-        
+    
     try:
+        # For GET requests
+        if request.method == 'GET':
+            # Create sample data for testing GET requests
+            sample_data = [
+                {"timestamp": "2024-03-01T10:00:00Z", "mood": "happy", "activities": ["exercise", "reading"]},
+                {"timestamp": "2024-03-05T10:00:00Z", "mood": "relaxed", "activities": ["meditation", "walking"]}
+            ]
+            result = predict_mood(sample_data)
+            return jsonify({
+                'success': True,
+                'predictions': result.get('daily_predictions', {}),
+                'insights': result.get('insights', {})
+            })
+            
+        # For POST requests
         data = request.json
         if not data:
             return jsonify({'error': 'No input data received'}), 400
@@ -39,10 +66,6 @@ def predict():
     except Exception as e:
         logger.error(f"API Error: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
-    
-# Set up the same logging as your original file
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 class MoodPredictor:
     def __init__(self):
@@ -220,6 +243,13 @@ def predict_mood(mood_logs):
     except Exception as e:
         logger.error(f"Error in prediction: {str(e)}")
         return {'error': str(e)}
+
+@app.route('/api/test', methods=['GET'])
+def test():
+    return jsonify({
+        'status': 'success',
+        'message': 'API is working correctly'
+    })
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
