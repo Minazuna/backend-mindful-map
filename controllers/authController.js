@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendVerificationEmail = (user, token) => {
-  const verificationUrl = `${process.env.VITE_NODE_API}/api/auth/verify-email?token=${token}`;
+  const verificationUrl = `https://mindful-map-backend-node.onrender.com/api/auth/verify-email?token=${token}`;
 
   const mailOptions = {
     from: '"Mindful Map" <no-reply@mindfulmap.com>',
@@ -37,7 +37,7 @@ const sendVerificationEmail = (user, token) => {
     html: `
       <div style="background-color: #f9f9f9; padding: 20px; font-family: 'Roboto', sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 10px; text-align: center;">
-          <img src="https://mindful-map-frontend.vercel.app/images/logo.png" alt="Mindful Map" style="width: 100px; margin-bottom: 20px;">
+          <img src="http://localhost:5173/images/logo.png" alt="Mindful Map" style="width: 100px; margin-bottom: 20px;">
           <h2>Account Verification</h2>
           <p style="text-align: justify;">Good day! Thank you for joining Mindful Map. To start using your account, please verify your email first by clicking the button below. We're looking forward to having you!</p>
           <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; margin-top: 20px; background-color: #6fba94; color: #ffffff; text-decoration: none; border-radius: 5px;">Verify Account</a>
