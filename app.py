@@ -7,67 +7,16 @@ from datetime import datetime, timedelta
 import json
 import logging
 from flask_cors import CORS
-import os
 
 # Create Flask app
 app = Flask(__name__)
-# Enable CORS properly
-CORS(app, origins="*", supports_credentials=True)
+# Enable CORS with proper configuration
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-@app.route('/api/predict-mood', methods=['GET', 'POST', 'OPTIONS'])
-def predict():
-    # Handle preflight OPTIONS request separately
-    if request.method == 'OPTIONS':
-        response = app.make_default_options_response()
-        headers = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-            'Access-Control-Max-Age': '3600'
-        }
-        for key, value in headers.items():
-            response.headers.add(key, value)
-        return response
-    
-    try:
-        # For GET requests, we'll provide sample data for testing
-        if request.method == 'GET':
-            # Create sample data for testing GET requests
-            sample_data = [
-                {"timestamp": "2024-03-01T10:00:00Z", "mood": "happy", "activities": ["exercise", "reading"]},
-                {"timestamp": "2024-03-05T10:00:00Z", "mood": "relaxed", "activities": ["meditation", "walking"]}
-            ]
-            result = predict_mood(sample_data)
-            return jsonify({
-                'success': True,
-                'predictions': result.get('daily_predictions', {}),
-                'insights': result.get('insights', {})
-            })
-            
-        # For POST requests
-        data = request.json
-        if not data:
-            return jsonify({'error': 'No input data received'}), 400
-        
-        result = predict_mood(data)
-        
-        if 'error' in result:
-            return jsonify(result), 500
-            
-        return jsonify({
-            'success': True,
-            'predictions': result.get('daily_predictions', {}),
-            'insights': result.get('insights', {})
-        })
-        
-    except Exception as e:
-        logger.error(f"API Error: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-    
 class MoodPredictor:
     def __init__(self):
         self.model = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -94,6 +43,7 @@ class MoodPredictor:
             raise
 
     def prepare_data(self, mood_logs):
+        # Implementation same as original code
         try:
             np.random.seed(int(pd.Timestamp.now().timestamp()))
             
@@ -116,7 +66,6 @@ class MoodPredictor:
 
             # Include data from four weeks before the current week
             four_weeks_ago = current_week_start - pd.Timedelta(days=28)
-
 
             processed_data = []
 
@@ -236,6 +185,12 @@ class MoodPredictor:
 
 def predict_mood(mood_logs):
     try:
+        # Validate input data
+        if len(mood_logs) < 7:
+            return {
+                'error': 'Need at least one week of mood data for predictions'
+            }
+            
         predictor = MoodPredictor()
         X, y = predictor.prepare_data(mood_logs)
         predictor.train(X, y)
@@ -245,6 +200,107 @@ def predict_mood(mood_logs):
         logger.error(f"Error in prediction: {str(e)}")
         return {'error': str(e)}
 
+# Mock database for demonstration
+# In a real app, you'd use a proper database
+_mock_user_data = {}
+
+def get_user_mood_logs(user_id):
+    """
+    In a real implementation, this would query your database
+    This is a mock function to simulate database access
+    """
+    # Return mock data if we have it
+    if user_id in _mock_user_data:
+        return _mock_user_data[user_id]
+        
+    # Create some sample data for testing
+    sample_data = []
+    for i in range(30):
+        date = datetime.now() - timedelta(days=i)
+        sample_data.append({
+            "mood": np.random.choice(["happy", "relaxed", "fine", "anxious", "sad"]),
+            "timestamp": date.isoformat(),
+            "activities": np.random.choice([["exercise", "reading"], ["work", "socializing"], 
+                                            ["family", "tv"], ["meditation", "cooking"]])
+        })
+    
+    _mock_user_data[user_id] = sample_data
+    return sample_data
+
+@app.route('/api/predict-mood', methods=['GET'])
+def predict_route():
+    try:
+        # In a real app, you'd get the user ID from authentication
+        # For this example, we'll use a query parameter
+        user_id = request.args.get('user_id', 'default_user')
+        
+        # Get the user's mood logs (30 days by default)
+        days = request.args.get('days', 30, type=int)
+        cutoff_date = datetime.now() - timedelta(days=days)
+        
+        # In a real implementation, fetch from database
+        mood_logs = get_user_mood_logs(user_id)
+        
+        logger.info(f"Retrieved {len(mood_logs)} mood logs for user {user_id}")
+        
+        # Check if we have sufficient data
+        if len(mood_logs) < 7:
+            return jsonify({
+                'success': True,
+                'predictions': {},
+                'message': 'Need at least one week of mood data for predictions'
+            })
+            
+        result = predict_mood(mood_logs)
+        
+        if 'error' in result:
+            return jsonify({
+                'success': False, 
+                'message': result['error']
+            }), 500
+            
+        return jsonify({
+            'success': True,
+            'predictions': result.get('daily_predictions', {}),
+            'insights': result.get('insights', {})
+        })
+        
+    except Exception as e:
+        logger.error(f"API Error: {str(e)}")
+        return jsonify({
+            'success': False, 
+            'message': f'Server error while generating predictions: {str(e)}'
+        }), 500
+
+# Add an admin route to insert mock data for testing
+@app.route('/api/admin/insert-mood-logs', methods=['POST'])
+def insert_mood_logs():
+    try:
+        data = request.json
+        user_id = data.get('user_id', 'default_user')
+        mood_logs = data.get('mood_logs', [])
+        
+        if not mood_logs:
+            return jsonify({'error': 'No mood logs provided'}), 400
+            
+        # Store in our mock database
+        _mock_user_data[user_id] = mood_logs
+        
+        return jsonify({
+            'success': True,
+            'message': f'Inserted {len(mood_logs)} mood logs for user {user_id}'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Health check endpoint
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({
+        'status': 'ok',
+        'timestamp': datetime.now().isoformat()
+    })
+
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    logger.info("Starting Mood Prediction API server")
+    app.run(host='0.0.0.0', port=5000, debug=False)
