@@ -7,15 +7,6 @@ from datetime import datetime, timedelta
 import json
 import sys
 import logging
-from flask import Flask
-from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://mindful-map-frontend.vercel.app", "methods": ["GET", "POST", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization"]}})
-
-@app.route('/')
-def home():
-    return "Mood Prediction API is running"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

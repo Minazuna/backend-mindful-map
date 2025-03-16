@@ -18,7 +18,11 @@ const { initScheduledTasks } = require('./utils/cronScheduler');
 
 // Middleware
 app.use(bodyParser.json());
-app.use(cors()); 
+app.use(cors({
+  origin: 'https://mindful-map-frontend.vercel.app',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+})); 
 
 // Routes
 app.use('/api/auth', authRoutes);
