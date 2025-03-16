@@ -13,10 +13,10 @@ app = Flask(__name__)
 # Enable CORS with proper configuration
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-@app.route('/api/predict-mood', methods=['POST', 'OPTIONS'])
+@app.route('/api/predict-mood', methods=['GET', 'POST', 'OPTIONS'])
 def predict():
     # Handle preflight OPTIONS request
-    if request.method == 'OPTIONS':
+    if request.method == 'GET':
         response = app.make_default_options_response()
         return response
         
