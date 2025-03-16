@@ -6,8 +6,8 @@ const {
   accountReactivatedTemplate
 } = require("../utils/emailTemplates");
 
-const BASE_URL = "https://mindful-map-frontend.vercel.app";
-const API_URL = "https://mindful-map-backend-node.onrender.com";
+const BASE_URL = process.env.FRONTEND_URL;
+const API_URL = process.env.VITE_NODE_API;
 
 const initiateUserDeactivation = async (userId) => {
     const user = await User.findById(userId);

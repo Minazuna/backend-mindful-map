@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendVerificationEmail = (user, token) => {
-  const verificationUrl = `https://mindful-map-backend-node.onrender.com/api/auth/verify-email?token=${token}`;
+  const verificationUrl = `${process.env.VITE_NODE_API}/api/auth/verify-email?token=${token}`;
 
   const mailOptions = {
     from: '"Mindful Map" <no-reply@mindfulmap.com>',
@@ -223,7 +223,7 @@ exports.verifyEmail = async (req, res) => {
     user.verified = true;
     await user.save();
 
-    return res.redirect('https://mindful-map-frontend.vercel.app/signin');
+    return res.redirect(`${process.env.FRONTEND_URL}/signin`);
   } catch (error) {
     console.error('Error in email verification:', error);
     res.status(500).json({ success: false, message: 'Server Error', error: error.message });
