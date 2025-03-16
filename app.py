@@ -10,7 +10,7 @@ from flask_cors import CORS
 
 # Create Flask app
 app = Flask(__name__)
-CORS(app) 
+CORS(app, origins=["https://mindful-map-frontend.vercel.app"]) 
 
 @app.route('/predict-mood', methods=['POST'])
 def predict():
