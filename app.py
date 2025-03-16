@@ -33,7 +33,7 @@ def predict():
         return response
     
     try:
-        # For GET requests
+        # For GET requests - for testing only
         if request.method == 'GET':
             # Create sample data for testing GET requests
             sample_data = [
@@ -48,14 +48,28 @@ def predict():
             })
             
         # For POST requests
+        logger.info("Received POST request to /api/predict-mood")
         data = request.json
+        logger.info(f"Received data type: {type(data)}")
+        
         if not data:
-            return jsonify({'error': 'No input data received'}), 400
+            logger.error("No input data received")
+            return jsonify({'success': False, 'message': 'No input data received'}), 400
+        
+        # Log the first few items of the data to help with debugging
+        sample_data = data[:2] if isinstance(data, list) and len(data) > 2 else data
+        logger.info(f"Sample of received data: {sample_data}")
+        
+        # Ensure data is in the correct format (list of dictionaries)
+        if not isinstance(data, list):
+            logger.error(f"Invalid data format. Expected a list, got {type(data)}")
+            return jsonify({'success': False, 'message': 'Invalid data format. Expected a list of mood logs'}), 400
         
         result = predict_mood(data)
         
         if 'error' in result:
-            return jsonify(result), 500
+            logger.error(f"Prediction error: {result['error']}")
+            return jsonify({'success': False, 'message': result['error']}), 500
             
         return jsonify({
             'success': True,
@@ -65,8 +79,9 @@ def predict():
         
     except Exception as e:
         logger.error(f"API Error: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 500
-
+        import traceback
+        
+        
 class MoodPredictor:
     def __init__(self):
         self.model = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -235,13 +250,17 @@ class MoodPredictor:
 
 def predict_mood(mood_logs):
     try:
+        logger.info(f"Processing {len(mood_logs)} mood logs")
         predictor = MoodPredictor()
         X, y = predictor.prepare_data(mood_logs)
         predictor.train(X, y)
         predictions = predictor.predict_weekly_moods()
+        logger.info(f"Prediction completed successfully")
         return predictions
     except Exception as e:
         logger.error(f"Error in prediction: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {'error': str(e)}
 
 @app.route('/api/test', methods=['GET'])

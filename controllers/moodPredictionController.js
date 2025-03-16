@@ -1,9 +1,6 @@
 const axios = require('axios');
 const MoodLog = require('../models/MoodLog');
 
-// Use the exact URL from your environment variable
-const PYTHON_SERVICE_URL = process.env.VITE_PYTHON_API;
-
 exports.predictMood = async (req, res) => {
     try {
         console.log("User ID from request:", req.user._id); 
@@ -31,36 +28,31 @@ exports.predictMood = async (req, res) => {
 
         console.log("Formatted logs for Python service:", formattedLogs);
 
-        // Debug the URL we're using
-        console.log("Making POST request to:", PYTHON_SERVICE_URL);
+        // Get the Python service URL from environment variables
+        const PYTHON_SERVICE_URL = `${process.env.VITE_PYTHON_API}/api/predict-mood`;
+        console.log("Sending POST request to:", PYTHON_SERVICE_URL);
 
-        // Send the data to the Python service
+        // Send the data directly to the Python service
         const pythonResponse = await axios.post(PYTHON_SERVICE_URL, formattedLogs, {
             headers: {
                 'Content-Type': 'application/json'
             },
-            timeout: 30000 // 30 seconds timeout
+            timeout: 60000 // 60 seconds timeout for ML processing
         });
         
         console.log("Python service response:", pythonResponse.data);
         
-        // Check the structure of the actual response
-        if (!pythonResponse.data || (!pythonResponse.data.predictions && !pythonResponse.data.daily_predictions)) {
-            console.error("Unexpected response format:", pythonResponse.data);
+        if (!pythonResponse.data.success) {
             return res.status(500).json({
                 success: false,
-                message: 'Invalid response format from prediction service'
+                message: pythonResponse.data.message || 'Error from prediction service'
             });
         }
         
-        // Use whichever format the Python service returns
-        const predictions = pythonResponse.data.daily_predictions || pythonResponse.data.predictions;
-        const insights = pythonResponse.data.insights || {};
-        
         return res.json({
             success: true,
-            predictions: predictions,
-            insights: insights
+            predictions: pythonResponse.data.predictions || {},
+            insights: pythonResponse.data.insights || {}
         });
 
     } catch (error) {
