@@ -1,6 +1,7 @@
-const { spawn } = require('child_process');
-const path = require('path');
+const axios = require('axios');
 const MoodLog = require('../models/MoodLog');
+
+const PYTHON_SERVICE_URL = process.env.VITE_PYTHON_API
 
 exports.predictMood = async (req, res) => {
     try {
@@ -27,85 +28,22 @@ exports.predictMood = async (req, res) => {
             activities: Array.isArray(log.activities) ? log.activities : []
         }));
 
-        console.log("Formatted logs for Python:", formattedLogs);
+        console.log("Formatted logs for Python service:", formattedLogs);
 
-        return new Promise((resolve, reject) => {
-            const pythonProcess = spawn(
-                path.join(process.cwd(), '..', 'venv', 'Scripts', 'python'),
-                [path.join(__dirname, '..', 'mood_prediction.py')],
-                { stdio: ['pipe', 'pipe', 'pipe'] }
-            );
-            
-            let pythonData = '';
-            let pythonError = '';
-
-            pythonProcess.stdin.write(JSON.stringify(formattedLogs));
-            pythonProcess.stdin.end();
-
-            pythonProcess.stdout.on('data', (data) => {
-                pythonData += data.toString();
-                console.log("Python output received:", data.toString());
-            });
-
-            pythonProcess.stderr.on('data', (data) => {
-                pythonError += data.toString();
-                console.error("Python error:", data.toString());
-            });
-
-            pythonProcess.on('close', (code) => {
-                console.log("Python process closed with code:", code);
-                console.log("Final Python output:", pythonData);
-
-                if (code !== 0) {
-                    console.error('Python process error:', pythonError);
-                    return res.status(500).json({
-                        success: false,
-                        message: 'Error generating mood predictions',
-                        error: pythonError
-                    });
-                }
-
-                try {
-                    // Clean the output string
-                    const cleanedData = pythonData.trim();
-                    if (!cleanedData) {
-                        throw new Error('No output from Python script');
-                    }
-
-                    const predictions = JSON.parse(cleanedData);
-
-                    if (predictions.error) {
-                        return res.status(500).json({
-                            success: false,
-                            message: predictions.error
-                        });
-                    }
-
-                    res.json({
-                        success: true,
-                        predictions: predictions.daily_predictions,
-                        insights: predictions.insights
-                    });
-                } catch (error) {
-                    console.error('JSON Parse Error:', error);
-                    console.error('Raw Python output:', pythonData);
-                    res.status(500).json({
-                        success: false,
-                        message: 'Error processing prediction results',
-                        error: error.message,
-                        rawOutput: pythonData
-                    });
-                }
-            });
-
-            pythonProcess.on('error', (error) => {
-                console.error('Failed to start Python process:', error);
-                res.status(500).json({
-                    success: false,
-                    message: 'Failed to start prediction process',
-                    error: error.message
-                });
-            });
+        // Send the data to the Python service
+        const pythonResponse = await axios.post(PYTHON_SERVICE_URL, formattedLogs, {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            timeout: 30000 // 30 seconds timeout
+        });
+        
+        console.log("Python service response:", pythonResponse.data);
+        
+        return res.json({
+            success: true,
+            predictions: pythonResponse.data.predictions,
+            insights: pythonResponse.data.insights
         });
 
     } catch (error) {
