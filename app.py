@@ -10,10 +10,16 @@ from flask_cors import CORS
 
 # Create Flask app
 app = Flask(__name__)
-CORS(app, origins=["https://mindful-map-frontend.vercel.app"]) 
+# Enable CORS with proper configuration
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-@app.route('/predict-mood', methods=['POST'])
+@app.route('/api/predict-mood', methods=['POST', 'OPTIONS'])
 def predict():
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        response = app.make_default_options_response()
+        return response
+        
     try:
         data = request.json
         if not data:
@@ -33,7 +39,7 @@ def predict():
     except Exception as e:
         logger.error(f"API Error: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
-
+    
 # Set up the same logging as your original file
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
