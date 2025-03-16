@@ -1,22 +1,20 @@
-from flask import Flask, request, jsonify
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from datetime import datetime, timedelta
 import json
+import sys
 import logging
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-# Create Flask app
-app = Flask(__name__)
-# Enable CORS with proper configuration
-CORS(app, resources={r"/api/*": {"origins": "*"}})
-
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+app = Flask(__name__)
+CORS(app)
 
 class MoodPredictor:
     def __init__(self):
@@ -195,14 +193,141 @@ def predict_mood(mood_logs):
         logger.error(f"Error in prediction: {str(e)}")
         return {'error': str(e)}
 
-# Health check endpoint
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({
-        'status': 'ok',
-        'timestamp': datetime.now().isoformat()
-    })
+@app.route('/api/predict-mood', methods=['POST'])
+def get_prediction():
+    try:
+        token = request.headers.get('Authorization')
+        if not token or not token.startswith('Bearer '):
+            return jsonify({
+                'success': False,
+                'message': 'Authentication token is missing or invalid'
+            }), 401
+            
+        # Forward the token to Node backend to validate and get mood logs
+        import requests
+        
+        node_api = 'https://mindful-map-backend-node.onrender.com'
+        response = requests.get(
+            f"{node_api}/api/mood-logs", 
+            headers={
+                'Authorization': token,
+                'Content-Type': 'application/json'
+            }
+        )
+        
+        if response.status_code != 200:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to retrieve mood logs from node backend'
+            }), response.status_code
+            
+        mood_logs = response.json().get('logs', [])
+        
+        if len(mood_logs) < 7:
+            return jsonify({
+                'success': True,
+                'predictions': {},
+                'message': 'Need at least one week of mood data for predictions'
+            })
+        
+        # Format logs
+        formatted_logs = []
+        for log in mood_logs:
+            formatted_logs.append({
+                'mood': log.get('mood', '').lower(),
+                'timestamp': log.get('date'),
+                'activities': log.get('activities', [])
+            })
+            
+        # Get predictions
+        result = predict_mood(formatted_logs)
+        
+        if 'error' in result:
+            return jsonify({
+                'success': False,
+                'message': result['error']
+            }), 500
+            
+        return jsonify({
+            'success': True,
+            'predictions': result['daily_predictions']
+        })
+        
+    except Exception as e:
+        logger.error(f"API Error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Server error: {str(e)}'
+        }), 500
+
+# This endpoint is just for backward compatibility with the original implementation
+# It expects the mood logs in the request body
+@app.route('/api/predict-mood', methods=['GET'])
+def get_prediction_from_node():
+    try:
+        token = request.headers.get('Authorization')
+        if not token or not token.startswith('Bearer '):
+            return jsonify({
+                'success': False,
+                'message': 'Authentication token is missing or invalid'
+            }), 401
+            
+        # Forward the token to Node backend to validate and get mood logs
+        import requests
+        
+        node_api = 'https://mindful-map-backend-node.onrender.com'
+        response = requests.get(
+            f"{node_api}/api/mood-logs", 
+            headers={
+                'Authorization': token,
+                'Content-Type': 'application/json'
+            }
+        )
+        
+        if response.status_code != 200:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to retrieve mood logs from node backend'
+            }), response.status_code
+            
+        mood_logs = response.json().get('logs', [])
+        
+        if len(mood_logs) < 7:
+            return jsonify({
+                'success': True,
+                'predictions': {},
+                'message': 'Need at least one week of mood data for predictions'
+            })
+        
+        # Format logs
+        formatted_logs = []
+        for log in mood_logs:
+            formatted_logs.append({
+                'mood': log.get('mood', '').lower(),
+                'timestamp': log.get('date'),
+                'activities': log.get('activities', [])
+            })
+            
+        # Get predictions
+        result = predict_mood(formatted_logs)
+        
+        if 'error' in result:
+            return jsonify({
+                'success': False,
+                'message': result['error']
+            }), 500
+            
+        return jsonify({
+            'success': True,
+            'predictions': result['daily_predictions']
+        })
+        
+    except Exception as e:
+        logger.error(f"API Error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Server error: {str(e)}'
+        }), 500
 
 if __name__ == "__main__":
-    logger.info("Starting Mood Prediction API server")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
