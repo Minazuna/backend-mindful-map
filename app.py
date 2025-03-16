@@ -7,6 +7,32 @@ from datetime import datetime, timedelta
 import json
 import logging
 
+
+# Create Flask app
+app = Flask(__name__)
+
+@app.route('/predict-mood', methods=['POST'])
+def predict():
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No input data received'}), 400
+        
+        result = predict_mood(data)
+        
+        if 'error' in result:
+            return jsonify(result), 500
+            
+        return jsonify({
+            'success': True,
+            'predictions': result.get('daily_predictions', {}),
+            'insights': result.get('insights', {})
+        })
+        
+    except Exception as e:
+        logger.error(f"API Error: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 # Set up the same logging as your original file
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -187,31 +213,6 @@ def predict_mood(mood_logs):
     except Exception as e:
         logger.error(f"Error in prediction: {str(e)}")
         return {'error': str(e)}
-
-# Create Flask app
-app = Flask(__name__)
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    try:
-        data = request.json
-        if not data:
-            return jsonify({'error': 'No input data received'}), 400
-        
-        result = predict_mood(data)
-        
-        if 'error' in result:
-            return jsonify(result), 500
-            
-        return jsonify({
-            'success': True,
-            'predictions': result.get('daily_predictions', {}),
-            'insights': result.get('insights', {})
-        })
-        
-    except Exception as e:
-        logger.error(f"API Error: {str(e)}")
-        return jsonify({'success': False, 'message': str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
