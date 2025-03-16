@@ -6,10 +6,11 @@ from sklearn.preprocessing import LabelEncoder
 from datetime import datetime, timedelta
 import json
 import logging
-
+from flask_cors import CORS
 
 # Create Flask app
 app = Flask(__name__)
+CORS(app) 
 
 @app.route('/predict-mood', methods=['POST'])
 def predict():
