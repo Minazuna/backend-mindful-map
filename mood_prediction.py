@@ -189,7 +189,6 @@ def predict_mood(mood_logs):
         return {'error': str(e)}
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000) 
     try:
         input_data = sys.stdin.read().strip()
         if not input_data:
