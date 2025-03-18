@@ -56,7 +56,7 @@ const sendVerificationEmail = (user, token) => {
 
 exports.signup = async (req, res) => {
   try {
-    const { email, name, password, role } = req.body;
+    const { email, name, password, role, gender } = req.body;
 
     if (!email || !name || !password) {
       return res.status(400).json({ success: false, message: 'Email, name, and password are required.' });
@@ -84,6 +84,7 @@ exports.signup = async (req, res) => {
     user = new User({
       email,
       name,
+      gender: gender || 'Rather not say', // Include gender with default fallback
       avatar: avatarPath,
       firebaseUid: userRecord.uid,
       password, // Password will be hashed in the pre-save hook
