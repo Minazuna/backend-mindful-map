@@ -27,6 +27,14 @@ exports.getMonthlyUsers = async (req, res) => {
 
     const users = await User.aggregate([
       {
+        $addFields: {
+          createdAt: {
+            $ifNull: ['$createdAt', new Date(`${currentYear}-01-01`)], 
+          },
+        },
+      },
+
+      {
         $match: {
           createdAt: {
             $gte: new Date(`${currentYear}-01-01`),
@@ -34,12 +42,14 @@ exports.getMonthlyUsers = async (req, res) => {
           },
         },
       },
+      // Group by month
       {
         $group: {
           _id: { $month: '$createdAt' },
           count: { $sum: 1 },
         },
       },
+      // Sort by month
       {
         $sort: { _id: 1 },
       },
@@ -543,8 +553,7 @@ exports.getActiveVsInactiveUsers = async (req, res) => {
     const totalUsers = await User.countDocuments();
 
     // Calculate the number of inactive users
-    const inactiveUsersCount = totalUsers - activeUsers.length;
-
+    const inactiveUsersCount = totalUsers - activeUsers.length - 1;
     const data = {
       active: activeUsers.length,
       inactive: inactiveUsersCount
